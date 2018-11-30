@@ -17,6 +17,7 @@
 #include "hts221.h"
 #include "ltr329.h"
 #include "fxos8700.h"
+#include "discovery.h"
 
 
 /******* GLOBAL VARIABLES ******************************************/
@@ -30,9 +31,14 @@ int main()
     error_t err;
     button_e btn;
     u16 battery_level;
+    bool send = FALSE;
 
     /* Start of initialization */
 
+	/* Discovery payload variable */
+    discovery_data_s data = {0};
+    discovery_payload_s payload;
+    
     /* Configure button */
     SENSIT_API_configure_button(INTERRUPT_BOTH_EGDE);
 
@@ -67,6 +73,20 @@ int main()
         /* RTC alarm interrupt handler */
         if ((pending_interrupt & INTERRUPT_MASK_RTC) == INTERRUPT_MASK_RTC)
         {
+        	/* Do a temperatue & relative humidity measurement */
+            err = HTS221_measure(&(data.temperature), &(data.humidity));
+            if (err != HTS221_ERR_NONE)
+            {
+                ERROR_parser(err);
+            }
+            else
+            {
+                if (data.temperature < 16){
+                	send = TRUE;
+				}
+                
+            }
+            
             /* Clear interrupt */
             pending_interrupt &= ~INTERRUPT_MASK_RTC;
         }
